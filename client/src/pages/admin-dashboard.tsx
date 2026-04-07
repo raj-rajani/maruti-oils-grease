@@ -175,11 +175,12 @@ function ProductForm({
   );
 }
 
-function BrandLogoSettings() {
+function SiteSettings() {
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isSavingDetails, setIsSavingDetails] = useState(false);
 
   const { data: settings = {} } = useQuery<Record<string, string>>({
     queryKey: ["/api/settings"],
@@ -188,7 +189,30 @@ function BrandLogoSettings() {
 
   const currentLogo = settings.brandLogo || "";
 
-  const saveMutation = useMutation({
+  const [fields, setFields] = useState({
+    businessName: "",
+    tagline: "",
+    phone: "",
+    address: "",
+    gstin: "",
+    appDownloadLink: "",
+  });
+
+  // Sync fields from settings once loaded
+  const [fieldsSynced, setFieldsSynced] = useState(false);
+  if (!fieldsSynced && Object.keys(settings).length > 0) {
+    setFields({
+      businessName: settings.businessName || "MARUTI OILS & GREASE",
+      tagline: settings.tagline || "Authorized Dealer · Lubricants & Greases",
+      phone: settings.phone || "9427287074",
+      address: settings.address || "3rd Floor, 312, Spentha Complex, Race Course Road, GST Bhawan, Vadodara, Gujarat - 390007",
+      gstin: settings.gstin || "24ACQPR0924A3ZT",
+      appDownloadLink: settings.appDownloadLink || "https://play.google.com/store/apps/details?id=com.valorem.flostore",
+    });
+    setFieldsSynced(true);
+  }
+
+  const saveLogoMutation = useMutation({
     mutationFn: (logoData: string) => apiRequest("PUT", "/api/admin/settings", { key: "brandLogo", value: logoData }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
@@ -222,6 +246,24 @@ function BrandLogoSettings() {
     reader.readAsDataURL(file);
   };
 
+  const handleSaveAllSettings = async () => {
+    setIsSavingDetails(true);
+    try {
+      const entries = Object.entries(fields) as [string, string][];
+      await Promise.all(
+        entries.map(([key, value]) =>
+          apiRequest("PUT", "/api/admin/settings", { key, value })
+        )
+      );
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({ title: "Settings saved" });
+    } catch {
+      toast({ title: "Failed to save settings", variant: "destructive" });
+    } finally {
+      setIsSavingDetails(false);
+    }
+  };
+
   const displayLogo = logoPreview || currentLogo;
 
   return (
@@ -243,7 +285,8 @@ function BrandLogoSettings() {
         </button>
 
         {isExpanded && (
-          <div className="mt-4 pt-4 border-t space-y-4">
+          <div className="mt-4 pt-4 border-t space-y-5">
+            {/* Brand Logo */}
             <div>
               <Label className="text-xs font-medium">Brand Logo</Label>
               <p className="text-xs text-muted-foreground mt-0.5 mb-3">
@@ -274,11 +317,11 @@ function BrandLogoSettings() {
                       <Button
                         size="sm"
                         className="text-xs"
-                        onClick={() => saveMutation.mutate(logoPreview)}
-                        disabled={saveMutation.isPending}
+                        onClick={() => saveLogoMutation.mutate(logoPreview)}
+                        disabled={saveLogoMutation.isPending}
                         data-testid="button-save-logo"
                       >
-                        {saveMutation.isPending ? "Saving..." : "Save Logo"}
+                        {saveLogoMutation.isPending ? "Saving..." : "Save Logo"}
                       </Button>
                       <Button
                         size="sm"
@@ -305,6 +348,83 @@ function BrandLogoSettings() {
                   <p className="text-[10px] text-muted-foreground">PNG, JPG, or SVG. Max 2MB. Square format recommended.</p>
                 </div>
               </div>
+            </div>
+
+            {/* Business Details */}
+            <div className="border-t pt-4 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Business Details</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Business Name</Label>
+                  <Input
+                    value={fields.businessName}
+                    onChange={e => setFields(f => ({ ...f, businessName: e.target.value }))}
+                    placeholder="MARUTI OILS & GREASE"
+                    className="h-8 text-sm"
+                    data-testid="input-business-name"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Tagline</Label>
+                  <Input
+                    value={fields.tagline}
+                    onChange={e => setFields(f => ({ ...f, tagline: e.target.value }))}
+                    placeholder="Authorized Dealer · Lubricants & Greases"
+                    className="h-8 text-sm"
+                    data-testid="input-tagline"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Phone</Label>
+                  <Input
+                    value={fields.phone}
+                    onChange={e => setFields(f => ({ ...f, phone: e.target.value }))}
+                    placeholder="9427287074"
+                    className="h-8 text-sm"
+                    data-testid="input-phone"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">GSTIN</Label>
+                  <Input
+                    value={fields.gstin}
+                    onChange={e => setFields(f => ({ ...f, gstin: e.target.value }))}
+                    placeholder="24ACQPR0924A3ZT"
+                    className="h-8 text-sm"
+                    data-testid="input-gstin"
+                  />
+                </div>
+                <div className="col-span-1 sm:col-span-2 space-y-1.5">
+                  <Label className="text-xs">Address</Label>
+                  <Textarea
+                    value={fields.address}
+                    onChange={e => setFields(f => ({ ...f, address: e.target.value }))}
+                    placeholder="3rd Floor, 312, Spentha Complex..."
+                    rows={2}
+                    className="text-sm resize-none"
+                    data-testid="input-address"
+                  />
+                </div>
+                <div className="col-span-1 sm:col-span-2 space-y-1.5">
+                  <Label className="text-xs">App Download Link</Label>
+                  <Input
+                    value={fields.appDownloadLink}
+                    onChange={e => setFields(f => ({ ...f, appDownloadLink: e.target.value }))}
+                    placeholder="https://play.google.com/store/apps/..."
+                    className="h-8 text-sm"
+                    data-testid="input-app-download-link"
+                  />
+                </div>
+              </div>
+              <Button
+                size="sm"
+                className="text-xs mt-1"
+                onClick={handleSaveAllSettings}
+                disabled={isSavingDetails}
+                data-testid="button-save-settings"
+              >
+                {isSavingDetails ? "Saving..." : "Save Settings"}
+              </Button>
             </div>
           </div>
         )}
@@ -459,7 +579,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Site Settings */}
-        <BrandLogoSettings />
+        <SiteSettings />
 
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">

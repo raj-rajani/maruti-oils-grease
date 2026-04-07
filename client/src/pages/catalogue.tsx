@@ -155,6 +155,12 @@ export default function CataloguePage() {
   });
 
   const brandLogo = settings.brandLogo || "";
+  const businessName = settings.businessName || "MARUTI OILS & GREASE";
+  const tagline = settings.tagline || "Authorized Dealer · Lubricants & Greases";
+  const phone = settings.phone || "9427287074";
+  const address = settings.address || "Gujarat, India";
+  const appDownloadLink = settings.appDownloadLink || "https://play.google.com/store/apps/details?id=com.valorem.flostore";
+  const gstin = settings.gstin || "";
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
@@ -178,12 +184,12 @@ export default function CataloguePage() {
           <div className="flex items-center gap-3">
             <Logo brandLogo={brandLogo} />
             <div>
-              <h1 className="text-lg font-bold tracking-tight leading-none" data-testid="text-store-name">MARUTI OILS & GREASE</h1>
-              <p className="text-xs opacity-80 mt-0.5">Authorized Dealer &middot; Lubricants & Greases</p>
+              <h1 className="text-lg font-bold tracking-tight leading-none" data-testid="text-store-name">{businessName}</h1>
+              <p className="text-xs opacity-80 mt-0.5">{tagline}</p>
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-4 text-xs opacity-90">
-            <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /> 94272 87074</span>
+            <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /> {phone}</span>
             <Link href="/admin">
               <Button variant="ghost" size="sm" className="text-xs text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10" data-testid="link-admin">
                 Admin
@@ -302,7 +308,7 @@ export default function CataloguePage() {
             <div>
               <div className="flex items-center gap-2 text-primary-foreground mb-3">
                 <Logo brandLogo={brandLogo} />
-                <span className="font-bold text-base">MARUTI OILS & GREASE</span>
+                <span className="font-bold text-base" data-testid="text-footer-business-name">{businessName}</span>
               </div>
               <p className="text-xs leading-relaxed opacity-70">
                 Your trusted partner for genuine lubricants, oils, and greases. Serving vendors and workshops across Gujarat.
@@ -311,15 +317,18 @@ export default function CataloguePage() {
             <div>
               <h4 className="font-semibold text-primary-foreground mb-2">Contact</h4>
               <div className="space-y-1.5 text-xs">
-                <p className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" /> +91 94272 87074</p>
-                <p className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5" /> Gujarat, India</p>
+                <p className="flex items-center gap-2" data-testid="text-footer-phone"><Phone className="w-3.5 h-3.5" /> +91 {phone}</p>
+                <p className="flex items-center gap-2" data-testid="text-footer-address"><MapPin className="w-3.5 h-3.5" /> {address}</p>
+                {gstin && (
+                  <p className="text-xs opacity-70" data-testid="text-footer-gstin">GSTIN: {gstin}</p>
+                )}
               </div>
             </div>
             <div>
               <h4 className="font-semibold text-primary-foreground mb-2">Quick Links</h4>
               <div className="space-y-1.5 text-xs">
-                <p className="opacity-70">Download our app on Google Play</p>
-                <a href="https://play.google.com/store/apps/details?id=com.valorem.flostore" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-accent hover:underline">
+                <p className="opacity-70">Download the mobile app for our online store</p>
+                <a href={appDownloadLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-accent hover:underline" data-testid="link-app-download">
                   Digital Vyapar Store &rarr;
                 </a>
               </div>
