@@ -22,18 +22,36 @@ function Logo() {
   );
 }
 
+function ProductImage({ product }: { product: Product }) {
+  const [imgError, setImgError] = useState(false);
+  const initials = (product.brand || product.name).slice(0, 2).toUpperCase();
+  
+  if (imgError || !product.imageUrl) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+        <span className="text-3xl font-bold text-primary/40">{initials}</span>
+      </div>
+    );
+  }
+  
+  return (
+    <img
+      src={product.imageUrl}
+      alt={product.name}
+      className="w-full h-full object-contain bg-white p-2 group-hover:scale-105 transition-transform duration-500"
+      loading="lazy"
+      onError={() => setImgError(true)}
+    />
+  );
+}
+
 function ProductCard({ product, categories }: { product: Product; categories: Category[] }) {
   const category = categories.find(c => c.id === product.categoryId);
   
   return (
     <Card className="group overflow-hidden border border-border/60 hover:border-primary/30 transition-all duration-300 hover:shadow-md" data-testid={`card-product-${product.id}`}>
-      <div className="relative aspect-square bg-muted/30 overflow-hidden">
-        <img
-          src={product.imageUrl || "/api/placeholder/default"}
-          alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-        />
+      <div className="relative aspect-square bg-white overflow-hidden">
+        <ProductImage product={product} />
         {!product.inStock && (
           <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
             <Badge variant="destructive" className="text-sm font-semibold px-3 py-1">Out of Stock</Badge>
