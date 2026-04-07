@@ -161,4 +161,23 @@ export async function registerRoutes(server: Server, app: Express) {
     // Store as data URL directly, return it back
     res.json({ url: imageData });
   });
+
+  // ---- SITE SETTINGS ----
+  app.get("/api/settings", (_req, res) => {
+    const settings = storage.getAllSettings();
+    const map: Record<string, string> = {};
+    for (const s of settings) {
+      map[s.key] = s.value;
+    }
+    res.json(map);
+  });
+
+  app.put("/api/admin/settings", requireAuth, (req, res) => {
+    const { key, value } = req.body;
+    if (!key || value === undefined) {
+      return res.status(400).json({ message: "Key and value required" });
+    }
+    const setting = storage.setSetting(key, value);
+    res.json(setting);
+  });
 }

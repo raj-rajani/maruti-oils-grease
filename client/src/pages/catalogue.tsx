@@ -10,7 +10,7 @@ import { Search, Phone, MapPin, Package, Filter, ChevronDown, Shield, Truck, Clo
 import type { Product, Category } from "@shared/schema";
 import { getQueryFn } from "@/lib/queryClient";
 
-function Logo() {
+function DefaultLogo() {
   return (
     <svg viewBox="0 0 48 48" className="w-10 h-10" aria-label="Maruti Oils & Grease Logo">
       <circle cx="24" cy="24" r="22" fill="none" stroke="currentColor" strokeWidth="2.5" />
@@ -20,6 +20,13 @@ function Logo() {
       <circle cx="24" cy="24" r="4" fill="currentColor" />
     </svg>
   );
+}
+
+function Logo({ brandLogo }: { brandLogo?: string }) {
+  if (brandLogo) {
+    return <img src={brandLogo} alt="Maruti Oils & Grease" className="w-10 h-10 rounded-md object-contain bg-white/10" />;
+  }
+  return <DefaultLogo />;
 }
 
 function ProductImage({ product }: { product: Product }) {
@@ -142,6 +149,13 @@ export default function CataloguePage() {
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
+  const { data: settings = {} } = useQuery<Record<string, string>>({
+    queryKey: ["/api/settings"],
+    queryFn: getQueryFn({ on401: "throw" }),
+  });
+
+  const brandLogo = settings.brandLogo || "";
+
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
       const matchesSearch = !search || 
@@ -162,7 +176,7 @@ export default function CataloguePage() {
       <header className="sticky top-0 z-50 bg-primary text-primary-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Logo />
+            <Logo brandLogo={brandLogo} />
             <div>
               <h1 className="text-lg font-bold tracking-tight leading-none" data-testid="text-store-name">MARUTI OILS & GREASE</h1>
               <p className="text-xs opacity-80 mt-0.5">Authorized Dealer &middot; Lubricants & Greases</p>
@@ -287,7 +301,7 @@ export default function CataloguePage() {
           <div className="grid sm:grid-cols-3 gap-6 text-sm">
             <div>
               <div className="flex items-center gap-2 text-primary-foreground mb-3">
-                <Logo />
+                <Logo brandLogo={brandLogo} />
                 <span className="font-bold text-base">MARUTI OILS & GREASE</span>
               </div>
               <p className="text-xs leading-relaxed opacity-70">

@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import {
   Plus, Pencil, Trash2, LogOut, Package, LayoutGrid,
-  Search, Upload, ArrowLeft, BarChart3, AlertCircle
+  Search, Upload, ArrowLeft, BarChart3, AlertCircle, Settings, Image as ImageIcon, ChevronDown
 } from "lucide-react";
 import type { Product, Category } from "@shared/schema";
 
@@ -175,6 +175,144 @@ function ProductForm({
   );
 }
 
+function BrandLogoSettings() {
+  const { toast } = useToast();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [logoPreview, setLogoPreview] = useState<string>("");
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const { data: settings = {} } = useQuery<Record<string, string>>({
+    queryKey: ["/api/settings"],
+    queryFn: getQueryFn({ on401: "throw" }),
+  });
+
+  const currentLogo = settings.brandLogo || "";
+
+  const saveMutation = useMutation({
+    mutationFn: (logoData: string) => apiRequest("PUT", "/api/admin/settings", { key: "brandLogo", value: logoData }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({ title: "Brand logo updated" });
+      setLogoPreview("");
+    },
+    onError: () => toast({ title: "Failed to update logo", variant: "destructive" }),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: () => apiRequest("PUT", "/api/admin/settings", { key: "brandLogo", value: "" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({ title: "Brand logo removed" });
+      setLogoPreview("");
+    },
+  });
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Logo must be under 2MB", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setLogoPreview(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const displayLogo = logoPreview || currentLogo;
+
+  return (
+    <Card className="border-border/60 mb-6">
+      <CardContent className="p-4">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center justify-between w-full text-left"
+          data-testid="button-toggle-logo-settings"
+        >
+          <div className="flex items-center gap-2">
+            <Settings className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-semibold">Site Settings</span>
+            {currentLogo && (
+              <Badge variant="outline" className="text-[10px] ml-1">Logo set</Badge>
+            )}
+          </div>
+          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+        </button>
+
+        {isExpanded && (
+          <div className="mt-4 pt-4 border-t space-y-4">
+            <div>
+              <Label className="text-xs font-medium">Brand Logo</Label>
+              <p className="text-xs text-muted-foreground mt-0.5 mb-3">
+                Upload your business logo. It will appear in the site header and footer.
+              </p>
+              <div className="flex items-start gap-4">
+                <div className="w-20 h-20 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden shrink-0">
+                  {displayLogo ? (
+                    <img src={displayLogo} alt="Brand logo" className="w-full h-full object-contain p-1" />
+                  ) : (
+                    <ImageIcon className="w-8 h-8 text-muted-foreground/40" />
+                  )}
+                </div>
+                <div className="space-y-2 flex-1">
+                  <input type="file" ref={fileRef} accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs gap-1.5"
+                    onClick={() => fileRef.current?.click()}
+                    data-testid="button-upload-logo"
+                  >
+                    <Upload className="w-3.5 h-3.5" /> {currentLogo ? "Change Logo" : "Upload Logo"}
+                  </Button>
+                  {logoPreview && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => saveMutation.mutate(logoPreview)}
+                        disabled={saveMutation.isPending}
+                        data-testid="button-save-logo"
+                      >
+                        {saveMutation.isPending ? "Saving..." : "Save Logo"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-xs"
+                        onClick={() => { setLogoPreview(""); if (fileRef.current) fileRef.current.value = ""; }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                  {currentLogo && !logoPreview && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs text-destructive hover:text-destructive"
+                      onClick={() => removeMutation.mutate()}
+                      disabled={removeMutation.isPending}
+                      data-testid="button-remove-logo"
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" /> Remove Logo
+                    </Button>
+                  )}
+                  <p className="text-[10px] text-muted-foreground">PNG, JPG, or SVG. Max 2MB. Square format recommended.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AdminDashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
@@ -319,6 +457,9 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Site Settings */}
+        <BrandLogoSettings />
 
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">

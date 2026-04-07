@@ -1,6 +1,6 @@
 import { storage } from "./storage";
-import { db } from "./db";
-import { categories, products, users } from "@shared/schema";
+import { db, sqlite } from "./db";
+import { categories, products, users, siteSettings } from "@shared/schema";
 
 // Map of product names to their real image paths
 const IMAGE_MAP: Record<string, string> = {
@@ -51,6 +51,41 @@ function updateExistingImages() {
 }
 
 export function seedDatabase() {
+  // Ensure all tables exist
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      sort_order INTEGER DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      category_id INTEGER NOT NULL,
+      price TEXT,
+      unit TEXT DEFAULT 'L',
+      pack_size TEXT,
+      brand TEXT,
+      grade TEXT,
+      stock_qty INTEGER DEFAULT 0,
+      in_stock INTEGER DEFAULT 1,
+      image_url TEXT,
+      featured INTEGER DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS site_settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      key TEXT NOT NULL UNIQUE,
+      value TEXT NOT NULL
+    );
+  `);
+
   // Check if already seeded
   const existingCats = storage.getCategories();
   if (existingCats.length > 0) {

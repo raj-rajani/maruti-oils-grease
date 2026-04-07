@@ -1,4 +1,4 @@
-import { users, categories, products, type User, type InsertUser, type Category, type InsertCategory, type Product, type InsertProduct } from "@shared/schema";
+import { users, categories, products, siteSettings, type User, type InsertUser, type Category, type InsertCategory, type Product, type InsertProduct, type SiteSetting } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
@@ -23,6 +23,11 @@ export interface IStorage {
   updateProduct(id: number, product: Partial<InsertProduct>): Product | undefined;
   deleteProduct(id: number): void;
   getFeaturedProducts(): Product[];
+
+  // Site Settings
+  getSetting(key: string): SiteSetting | undefined;
+  getAllSettings(): SiteSetting[];
+  setSetting(key: string, value: string): SiteSetting;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -84,6 +89,22 @@ export class DatabaseStorage implements IStorage {
 
   getFeaturedProducts(): Product[] {
     return db.select().from(products).where(eq(products.featured, true)).all();
+  }
+
+  getSetting(key: string): SiteSetting | undefined {
+    return db.select().from(siteSettings).where(eq(siteSettings.key, key)).get();
+  }
+
+  getAllSettings(): SiteSetting[] {
+    return db.select().from(siteSettings).all();
+  }
+
+  setSetting(key: string, value: string): SiteSetting {
+    const existing = this.getSetting(key);
+    if (existing) {
+      return db.update(siteSettings).set({ value }).where(eq(siteSettings.key, key)).returning().get();
+    }
+    return db.insert(siteSettings).values({ key, value }).returning().get();
   }
 }
 
